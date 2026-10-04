@@ -1,1 +1,259 @@
+Order ID exists
+Customer ID exists
+Product ID exists
+Quantity is greater than 0
+Amount is valid
+Customer places order
 
+For example:
+
+{
+  "orderId": "ORD1001",
+  "customerId": "C101",
+  "productId": "P501",
+  "quantity": 2,
+  "amount": 1500
+}
+
+The request enters through API Gateway.
+
+Step 2 — Validate Order
+
+Lambda checks:
+
+Order ID exists
+Customer ID exists
+Product ID exists
+Quantity is greater than 0
+Amount is valid
+
+If invalid:
+
+Order → REJECTED
+
+If valid:
+
+Order → Continue
+Step 3 — Check Inventory
+
+Another Lambda checks DynamoDB.
+
+Example:
+
+Product P501
+Available stock = 10
+Requested quantity = 2
+
+Therefore:
+
+Inventory available
+        ↓
+Continue
+
+If stock is insufficient:
+
+Inventory unavailable
+        ↓
+Cancel Order
+Step 4 — Process Payment
+
+Lambda simulates payment processing.
+
+For your college project, don't connect to a real payment gateway. You can simulate:
+
+Payment
+ ├── SUCCESS
+ └── FAILED
+
+If payment fails, Step Functions can automatically retry the payment task.
+
+Step 5 — Confirm Order
+
+If payment succeeds:
+
+Payment Successful
+        ↓
+Confirm Order
+        ↓
+Order Status = CONFIRMED
+Step 6 — Update Order
+
+DynamoDB gets updated:
+
+Order ID: ORD1001
+Status: CONFIRMED
+Payment: SUCCESS
+Inventory: UPDATED
+Step 7 — Monitoring
+
+CloudWatch records:
+
+Workflow Started
+Order Validated
+Inventory Checked
+Payment Processed
+Order Confirmed
+Workflow Completed
+
+If something fails, you can see the error in CloudWatch.
+
+5. The most important part: Step Functions
+
+Your Step Functions state machine could have states like:
+
+Start
+  ↓
+ValidateOrder
+  ↓
+CheckInventory
+  ↓
+IsStockAvailable?
+  ├── No → CancelOrder → End
+  │
+  └── Yes
+       ↓
+   ProcessPayment
+       ↓
+   PaymentSuccessful?
+     ├── No → Retry Payment
+     │          ↓
+     │       PaymentFailed
+     │
+     └── Yes
+          ↓
+      ConfirmOrder
+          ↓
+      UpdateOrder
+          ↓
+         End
+
+This is where your orchestration concept is demonstrated.
+
+6. What you can demonstrate to your faculty
+
+You should ideally demonstrate 3 scenarios.
+
+Scenario 1 — Successful order
+Order
+ ↓
+Validation ✓
+ ↓
+Inventory ✓
+ ↓
+Payment ✓
+ ↓
+Confirmation ✓
+ ↓
+COMPLETED
+Scenario 2 — Insufficient inventory
+Order
+ ↓
+Validation ✓
+ ↓
+Inventory ✗
+ ↓
+Cancel Order
+ ↓
+FAILED/CANCELLED
+Scenario 3 — Payment failure
+Order
+ ↓
+Validation ✓
+ ↓
+Inventory ✓
+ ↓
+Payment ✗
+ ↓
+Retry
+ ↓
+Payment ✓
+ ↓
+Confirm Order
+
+Scenario 3 is especially useful because it demonstrates why Step Functions is being used instead of simply chaining Lambda functions manually.
+
+7. Project development order
+
+I recommend building it in this order:
+
+Phase 1 — Database
+
+Create DynamoDB tables:
+
+Orders
+Products/Inventory
+
+Phase 2 — Lambda functions
+
+Create:
+
+validateOrder()
+checkInventory()
+processPayment()
+confirmOrder()
+updateOrder()
+cancelOrder()
+
+Phase 3 — Step Functions
+
+Connect those Lambda functions into the state machine.
+
+Phase 4 — Error handling
+
+Add:
+
+Retry
+Catch
+Failure states
+Conditional branching
+
+Phase 5 — API Gateway
+
+Create an API endpoint such as:
+
+POST /orders
+
+Phase 6 — Monitoring
+
+Use CloudWatch to show execution logs and errors.
+
+Phase 7 — Testing
+
+Test:
+
+✓ Successful order
+✓ Invalid order
+✓ Insufficient inventory
+✓ Payment failure
+✓ Retry mechanism
+Final project structure
+
+Your project can therefore be presented as:
+
+          STEP FUNCTIONS
+      ORDER WORKFLOW PROJECT
+                 │
+     ┌───────────┴───────────┐
+     │                       │
+ API Gateway             DynamoDB
+     │                 Orders + Inventory
+     ▼
+Step Functions
+     │
+     ├── Validate Order
+     │
+     ├── Check Inventory
+     │
+     ├── Process Payment
+     │
+     ├── Confirm Order
+     │
+     ├── Update Order
+     │
+     └── Handle Failure
+              │
+              ▼
+         CloudWatch
+          Monitoring
+
+This gives you a clear, realistic AWS project rather than a generic "AWS orchestration" project. The central concept is: Step Functions controls the sequence, decisions, retries, and failure handling of an order from placement to completion.
