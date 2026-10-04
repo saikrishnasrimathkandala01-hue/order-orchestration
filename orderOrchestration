@@ -1,1 +1,48 @@
-
+                 CUSTOMER
+                    │
+                    ▼
+              Place Order
+                    │
+                    ▼
+            ┌───────────────┐
+            │   API Gateway │
+            └───────┬───────┘
+                    │
+                    ▼
+          ┌────────────────────┐
+          │   Step Functions   │
+          │  Order Workflow    │
+          └─────────┬──────────┘
+                    │
+                    ▼
+             Validate Order
+                    │
+              ┌─────┴─────┐
+              │           │
+           Valid        Invalid
+              │           │
+              ▼           ▼
+       Check Inventory   Reject
+              │
+        ┌─────┴─────┐
+        │           │
+    Available    Not Available
+        │           │
+        ▼           ▼
+ Process Payment   Cancel
+        │
+   ┌────┴─────┐
+   │          │
+Success     Failed
+   │          │
+   ▼          ▼
+Confirm     Retry
+Order         │
+   │       Failure
+   ▼          │
+Update        ▼
+Order       Payment
+Status      Failed
+   │
+   ▼
+  END
